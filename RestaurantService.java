@@ -26,41 +26,12 @@ public class RestaurantService {
     static Map<Integer, Map<String, Double >> combinedMenu ;
     static String searchItem = StringUtils.EMPTY;
 
-    public  void processAndStore(String fileName, String searchString) throws IOException { 
-        BufferedReader bf = new BufferedReader(new FileReader(fileName));
-        searchItem = searchString;
-        combinedMenu = new HashMap<Integer, Map<String, Double >> ();
-        
-        String menuItem = "";
-        while( (menuItem = bf.readLine()) != null){
-        if(menuItem!=null && menuItem.length()> 0){
-            String[] menuItemInfo = menuItem.split(",");
-            int indexforPrice = menuItem.indexOf(",");
-            int indexForItem = menuItem.indexOf(',', indexforPrice+1);
-            
-            if(menuItemInfo.length > 2){
-                Integer restaurantId = Integer.parseInt(menuItemInfo[0]);
-                Double  price = Double.parseDouble(menuItemInfo[1]);
-                String items = menuItem.substring(indexForItem+1 ,menuItem.length());  
-                items =  items.replaceAll("\\s", "").trim();
-                items = items.replace(",", "-");
-                if(combinedMenu.containsKey(restaurantId)){
-                    Map<String, Double>  priceMap = combinedMenu.get(restaurantId);
-                    priceMap.put(items, price);
-                }else{
-                   Map<String, Double>  priceMap = new HashMap<String, Double>();
-                   priceMap.put(items, price);
-                   combinedMenu.put(restaurantId, priceMap);
-                }
-            }else{
-                System.out.println("record in incorrect format:"+searchString);
-            }
-        }
-        }
-        searchForEconomicalRestaurant(combinedMenu);
-    }
+
     
-    private void searchForEconomicalRestaurant(Map<Integer, Map<String, Double>> combinedMenu) {
+    public void searchForEconomicalRestaurant(Map<Integer, Map<String, Double>> combinedMenu, String searchItem) {
+        this.combinedMenu =combinedMenu;
+        this.searchItem=searchItem;
+        //calculates mininum price for user requested items across all the restaurants
         Double minPrice = Double.MAX_VALUE;
         Integer cheapestRestaurantId = 0;
         for(Entry<Integer, Map<String, Double>> restaurantList :combinedMenu.entrySet() ){
@@ -82,6 +53,7 @@ public class RestaurantService {
 
     
     public Double  findMinCostinRestaurant(Integer restaurantId){
+        //returns the combo with least cost and whic covers all the items in a particular restaurant
         Map<String,Double> priceList  =  combinedMenu.get(restaurantId);
        
         Set<String> itemsInRestaurant = priceList.keySet();
@@ -98,6 +70,7 @@ public class RestaurantService {
     }
 
     private Double findComboWithMinPriceForRestaurant(List<List<String>> allCombinations, Integer restaurantId) {
+        //compares cost of all combos in a restaurant and returns combo with least price
         Double minPrice = Double.MAX_VALUE;
         Double priceOfCombo = 0.0;
         Map<String,Double> priceList  =  combinedMenu.get(restaurantId);
@@ -114,15 +87,18 @@ public class RestaurantService {
     }
 
     private List<List<String>> getMenuItemsCombination(String[] listOfItemsInRestaurant) {
+        //returns all the possible combinations of items/combi in restaurant which cover the uers requested itemd
         List<List<String>> combosForUserOrder = new ArrayList<List<String>>();
         String number  = StringUtils.EMPTY;
         int length = listOfItemsInRestaurant.length;
-       for(int  i=1; i<Math.pow(2, length);i++){
-          number = getBinaryRepresentation(i, length);
+       for(int  index=1; index<Math.pow(2, length);index++){
+          number = getBinaryRepresentation(index, length);
        
         String comboItem = getCombinationString(listOfItemsInRestaurant, number );
         String [] comboItemArray = comboItem.split(",");
+        // split the string to get array of items/combis present in restaurant
         comboItem = comboItem.replaceAll(",", "-");
+        // split to get list of all items covered in the combi
         List<String> comboMenuList = new ArrayList<String>(Arrays.asList(comboItemArray)); 
         
         String [] listOfItems = comboItem.split("-");
@@ -136,19 +112,22 @@ public class RestaurantService {
     }
 
     private String getBinaryRepresentation(int i, int length) {
-        String number  = Integer.toBinaryString(i);
-        Integer appendZeros=0;
-        if(number.length()<length){
-             appendZeros = length - number.length();
+        //returns binary representation of integer
+        String combination  = Integer.toBinaryString(i);
+        Integer prependZeros=0;
+        if(combination.length()<length){
+            
+             prependZeros = length - combination.length();
         }
-        for(int num=0;num<appendZeros;num++){
-            number ="0"+number;
+        for(int num=0;num<prependZeros;num++){
+            combination ="0"+combination;
             
         }
-        return number;
+        return combination;
     }
 
     private Boolean checkComboForRequest( List<String> comboList ) {
+        //check if combination items has all the items user requested for
         String [] searchItemArray = this.searchItem.trim().split(",");
             List<String> userOrderedItems = new ArrayList<String>(Arrays.asList(searchItemArray));
             if(comboList.containsAll(userOrderedItems)){
@@ -162,6 +141,7 @@ public class RestaurantService {
     
 
     private String  getCombinationString(String[] itm, String number) {
+        //returns a unique combination of menu items in restaurant using binary representation
         String combiMenu =StringUtils.EMPTY;
         for(int index =0;index < itm.length; index++){
             if(number.charAt(index)=='1'){
